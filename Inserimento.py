@@ -132,8 +132,8 @@ else:
             df = pd.DataFrame.from_dict(st.session_state.pezzi_list[n], orient='index')
             st.write(f"Pezzo {n}", df.T)
 
-        st.write("Offerta", st.session_state.offertaFeatures)
-        st.write("Pezzi", st.session_state.pezzi_list)
+        #st.write("Offerta", st.session_state.offertaFeatures)
+        #st.write("Pezzi", st.session_state.pezzi_list)
 
 
         insert, reset, _ = st.columns([6,6,5])

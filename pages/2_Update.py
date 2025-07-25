@@ -3,7 +3,7 @@ import duckdb
 from datetime import date
 import pandas as pd
 import time
-from utils import updateDB
+from utils import updateDB, checkForChanges, simpleQuery
 
 # --- Functions ---
 
@@ -28,6 +28,9 @@ if "ex" not in st.session_state:
 
 if "offertaLoaded" not in st.session_state:
     st.session_state.offertaLoaded = pd.DataFrame()
+
+if "ehasOfferChangedx" not in st.session_state:
+    st.session_state.hasOfferChanged = False
 
 # Campi per filtrare le offerte (almeno uno va inserito)
 col1, col2 = st.columns(2)
@@ -91,8 +94,7 @@ query = f"""
 # Query 1: look in the DB
 if search_button:
     try:
-        with duckdb.connect(db_path, read_only=True) as con:
-            df = con.execute(query, params).fetchdf()
+        df = simpleQuery(query, params)
 
         if df.empty:
             st.warning("🔍 Nessun risultato trovato con questi criteri.")
@@ -114,24 +116,23 @@ if not st.session_state.ex.empty:
 
     # Query 2: modify
     # Step 2: Button to retrieve the record
-    if st.button("Carica Offerta"):
-        
-        with duckdb.connect(db_path, read_only=True) as con:
-            query = """
-                SELECT offerta_id, data_offerta, costo_no_iva, stato, attrezzaggio_già_incluso_nel_totale_no_iva
-                FROM offerta
-                WHERE offerta_id = ?
-            """
-            df = con.execute(query, [offerta_id]).fetchdf()
+    if st.button("Carica Offerta", key="carica_offerta"):
+        query = """
+            SELECT offerta_id, data_offerta, costo_no_iva, stato, attrezzaggio_già_incluso_nel_totale_no_iva
+            FROM offerta
+            WHERE offerta_id = ?
+        """
+        df = simpleQuery(query, [offerta_id])
 
         if df.empty:
             st.warning("❌ Nessuna offerta trovata con questo ID.")
         else:
-            st.success("✅ Offerta trovata! Modifica i campi qui sotto.")
+            #st.success("✅ Offerta trovata! Modifica i campi qui sotto.")
+            # st.success not here to avoid duplicating buttons with st.spinner()
             st.session_state.offertaLoaded = df
 
 if not st.session_state.offertaLoaded.empty:
-
+    st.success("✅ Offerta trovata! Modifica i campi qui sotto.")
     df = st.session_state.offertaLoaded
     df.loc[:,"data_offerta"] = pd.to_datetime(df.loc[:,"data_offerta"]) #cast to datetime
     edited_df = st.data_editor(
@@ -145,16 +146,28 @@ if not st.session_state.offertaLoaded.empty:
         "stato":st.column_config.SelectboxColumn(options=["Aperta", "Persa", "In Arrivo", "In Lavorazione", "Ordine", "Comparativa", "Altro"])}
     )
 
+    #st.markdown("---")
+
     # Compare and update
-    save, reset, _ = st.columns([6,6,7])
+    st.session_state.hasOfferChanged, update_query, params = checkForChanges(df, edited_df, offerta_id)
+
+if not st.session_state.offertaLoaded.empty:
+    save, reset, _ = st.columns([6,6,5])
     with save:
-        if st.button("Salva modifiche"):
+        if st.button("Salva modifiche", key="save_button", disabled=(not st.session_state.hasOfferChanged)):
             with st.spinner("Salvataggio...", show_time=True):
                 time.sleep(5)
-                updateDB(df, edited_df, offerta_id)
+                if st.session_state.hasOfferChanged:
+                    try:
+                        updateDB(update_query, params)
+                    except Exception as e:
+                        st.error(f"❌ Failed to update data: {e}")
+                else:
+                    st.info("ℹ️ Nessuna modifica rilevata.")
+                
 
     with reset:
-        if st.button("Reset Session"):
+        if st.button("Reset Session", key="reset_button"):
             with st.spinner("Resetting session...", show_time=True):
                 time.sleep(5)
                 resetSession()

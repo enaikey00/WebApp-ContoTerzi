@@ -201,10 +201,12 @@ def insertIntoDB(offertaFeatures, pezziList):
 
 # does this uses query,params to avoid sql injection?
 
-def updateDB(df, edited_df, offerta_id):
-    # Set DB path
-    #db_path = "../Database/contoTerzi.duckdb"
-    
+def simpleQuery(query, params):
+    with duckdb.connect(db_path, read_only=True) as con:
+        df = con.execute(query, params).fetchdf()
+    return df
+
+def checkForChanges(df, edited_df, offerta_id):
     # Original DF and Edited one
     original = df.iloc[0]
     modified = edited_df.iloc[0]
@@ -212,6 +214,7 @@ def updateDB(df, edited_df, offerta_id):
     updates = []
     params = []
 
+    # Check for changes
     for col in df.columns:
         if original[col] != modified[col]:
             updates.append(f"{col} = ?")
@@ -224,14 +227,21 @@ def updateDB(df, edited_df, offerta_id):
             SET {', '.join(updates)}
             WHERE offerta_id = ?
         """
-        try:
-            with duckdb.connect(db_path, read_only=False) as con:
-                con.execute(update_query, params)
-            st.success("✅ Modifiche salvate con successo.")
-        except Exception as e:
-            st.error(f"❌ Errore durante l'aggiornamento: {e}")
-    else:
-        st.info("ℹ️ Nessuna modifica rilevata.")
+    if updates: 
+        return True, update_query, params
+    else: 
+        return False, "", ""
+
+def updateDB(update_query, params):
+    # Set DB path
+    #db_path = "../Database/contoTerzi.duckdb"
+
+    try:
+        with duckdb.connect(db_path, read_only=False) as con:
+            con.execute(update_query, params)
+        st.success("✅ Modifiche salvate con successo.")
+    except Exception as e:
+        st.error(f"❌ Errore durante l'aggiornamento: {e}")
 
 # Note:
 # Gestire il db_path con os.environ e config.yml ??
