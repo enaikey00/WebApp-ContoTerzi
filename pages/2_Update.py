@@ -20,7 +20,7 @@ st.set_page_config(page_title="Modifica", layout="centered")
 st.title("🛠 Modifica i Dati nel Database")
 st.subheader("🔍 Cerca un'offerta")
 
-db_path = "./Database/contoTerzi.duckdb"
+db_path = "../Database/contoTerzi.duckdb"
 #DATE_COLUMN = "data_offerta"
 
 if "ex" not in st.session_state:
