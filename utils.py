@@ -4,7 +4,7 @@ import duckdb
 import uuid
 
 # Set DB path
-db_path = "../EBS_AleDiCosmo/Database/contoTerzi.duckdb"
+db_path = "./Database/contoTerzi.duckdb"
 
 def readOfferta():
     #st.subheader("Inserimento Nuova Offerta") # already in Inserimento.py

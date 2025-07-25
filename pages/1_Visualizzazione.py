@@ -13,7 +13,7 @@ st.set_page_config(page_title="Visualizzazione", layout="centered")
 st.title("Visualizza i Dati nel Database")
 st.subheader(f"Cerca...") 
 
-db_path = "../EBS_AleDiCosmo/Database/contoTerzi.duckdb"
+db_path = "./Database/contoTerzi.duckdb"
 DATE_COLUMN = "data_offerta"
 
 #with duckdb.connect(db_path, read_only=True) as con:
